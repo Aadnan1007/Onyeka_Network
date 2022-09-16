@@ -1,0 +1,4 @@
+# This yaml serves to define the AWS tags that willl be applied to all resources in this cluster
+# This is useful for keeping track of billing & identifying where we're spending our moolah
+---
+Terraform : true
