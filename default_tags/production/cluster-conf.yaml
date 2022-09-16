@@ -1,0 +1,140 @@
+# This exists to define configuration for the cluster's common_cluster directory that is specific to this cluster.
+# It allows us to keep our common_cluster directory identical across the different environments, but have different cluster
+# configurations, such as having different types of EC2 instances available
+
+---
+aws_region: us-east-1
+environment: production
+
+## EKS Config
+cluster-name: production
+worker_groups_launch_template: [
+  {
+    name: "generic-worker",
+    instance_type: "t3a.xlarge",
+    ami_id: "ami-0ec51d189dd7ce465",
+    asg_min_size: "0",
+    asg_desired_capacity: "1",
+    asg_max_size: "5",
+    root_volume_size: "50",
+    root_volume_type: "gp3",
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"}
+    ]
+  },
+  {
+    name: "management-worker",
+    instance_type: "t3a.xlarge",
+    ami_id: "ami-0ec51d189dd7ce465",
+    asg_min_size: "0",
+    asg_desired_capacity: "1",
+    asg_max_size: "5",
+    root_volume_size: "150",
+    root_volume_type: "gp3",
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/taint/workload", value: "management", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/label/workload", value: "management", propagate_at_launch: "true"},
+    ],
+    kubelet_extra_args: "--register-with-taints workload=management:NoSchedule --node-labels workload=management"
+  },
+  {
+    name: "app-worker",
+    instance_type: "t3a.xlarge",
+    ami_id: "ami-0ec51d189dd7ce465",
+    asg_min_size: "0",
+    asg_desired_capacity: "0",
+    asg_max_size: "50",
+    root_volume_size: "50",
+    root_volume_type: "gp3",
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/taint/workload", value: "app", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/label/workload", value: "app", propagate_at_launch: "true"},
+    ],
+    kubelet_extra_args: "--register-with-taints workload=app:NoSchedule --node-labels workload=app"
+  },
+  {
+    name: "app-stateful",
+    instance_type: "t3a.xlarge",
+    ami_id: "ami-0ec51d189dd7ce465",
+    asg_min_size: "0",
+    asg_desired_capacity: "0",
+    asg_max_size: "20",
+    root_volume_size: "100",
+    root_volume_type: "gp3",
+    subnets: ["subnet-0721680ce1dcf09b1"], #This is the ID for subnet 1a
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/taint/workload", value: "app-stateful", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/label/workload", value: "app-stateful", propagate_at_launch: "true"},
+    ],
+    kubelet_extra_args: "--register-with-taints workload=app-stateful:NoSchedule --node-labels workload=app-stateful"
+  },
+  {
+    name: "spot-app-worker",
+    override_instance_types: [
+      "t2.xlarge",
+      "t3.xlarge",
+      "t3a.xlarge",
+      "t4g.xlarge"
+    ],
+    ami_id: "ami-0ec51d189dd7ce465",
+    asg_min_size: "0",
+    asg_desired_capacity: "0",
+    asg_max_size: "50",
+    spot_instance_pools: 2,
+    root_volume_size: "50",
+    root_volume_type: "gp3",
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/taint/workload", value: "app", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/label/workload", value: "app", propagate_at_launch: "true"},
+    ],
+    kubelet_extra_args: "--register-with-taints workload=app:NoSchedule --node-labels workload=app,node.kubernetes.io/lifecycle=spot"
+  },
+  {
+    name: "app-gpu",
+    instance_type: "p2.xlarge",
+    ami_id: "ami-082f6319006c501e4",
+    asg_min_size: "0",
+    asg_desired_capacity: "0",
+    asg_max_size: "20",
+    root_volume_size: "100",
+    root_volume_type: "gp3",
+    subnets: ["subnet-0721680ce1dcf09b1"], #This is the ID for subnet 1a
+    tags: [
+      {key: "k8s.io/cluster-autoscaler/enabled", value: "true", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/production", value: "owned", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/taint/workload", value: "app-gpu", propagate_at_launch: "true"},
+      {key: "k8s.io/cluster-autoscaler/node-template/label/workload", value: "app-gpu", propagate_at_launch: "true"},
+    ],
+    kubelet_extra_args: "--register-with-taints workload=app-gpu:NoSchedule --node-labels workload=app-gpu"
+  }
+]
+cluster_autoscaler_expander: "priority"
+cluster_autoscaler_priorities: |-
+  10:
+    - .*
+  50:
+    - .*spot.*
+
+iam_cluster_access_group: "Developers" # What IAM group should we use to determine who has access to this cluster?
+
+## VPC Config
+cidr_prefix: '10.69'
+private_subnet_ranges: ["16.0/20", "32.0/20", "48.0/20"]
+public_subnet_ranges: ["112.0/20", "128.0/20", "144.0/20"]
+enable_ipv6: false
+
+## DNS Config
+allowed_domains: '{coolnerds.cool}' # All 2nd level domains that external-dns is allowed to modify (in the format {1, 2, 3})
+root_domain: infra-dev-cluster.coolnerds.cool
+cert_dns_records: [
+  "infra-dev-cluster.coolnerds.cool"
+]
